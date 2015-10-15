@@ -209,7 +209,7 @@ func (scope *Scope) whereSql() (sql string) {
 	return
 }
 
-var hasCountRegexp = regexp.MustCompile(`(?i)count(.+)`)
+var hasCountRegexp = regexp.MustCompile(`(?i)\scount\s*\((.+)`)
 
 func (scope *Scope) selectSql() string {
 	if len(scope.Search.selects) == 0 {
