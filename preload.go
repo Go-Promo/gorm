@@ -8,6 +8,16 @@ import (
 	"strings"
 )
 
+type WhereCondition struct {
+	Condition string
+	Value     string
+}
+
+type OrderCondition struct {
+	Column string
+	Order  string
+}
+
 func getRealValue(value reflect.Value, columns []string) (results []interface{}) {
 	for _, column := range columns {
 		if reflect.Indirect(value).FieldByName(column).IsValid() {
@@ -110,7 +120,22 @@ func (scope *Scope) handleHasOnePreload(field *Field, conditions []interface{}) 
 	}
 
 	results := makeSlice(field.Struct.Type)
-	scope.Err(scope.NewDB().Where(fmt.Sprintf("%v IN (%v)", toQueryCondition(scope, relation.ForeignDBNames), toQueryMarks(primaryKeys)), toQueryValues(primaryKeys)...).Find(results, conditions...).Error)
+
+	newDb := scope.NewDB()
+
+	whereConditions := []interface{}{}
+	for _, c := range conditions {
+		switch cond := c.(type) {
+		default:
+			whereConditions = append(whereConditions, c) // Inline string, default
+		case WhereCondition:
+			newDb = newDb.Where(fmt.Sprintf("%s = ?", cond.Condition), cond.Value)
+		case OrderCondition:
+			newDb = newDb.Order(fmt.Sprintf("%s %s", cond.Column, cond.Order))
+		}
+	}
+
+	scope.Err(newDb.Where(fmt.Sprintf("%v IN (%v)", toQueryCondition(scope, relation.ForeignDBNames), toQueryMarks(primaryKeys)), toQueryValues(primaryKeys)...).Find(results, whereConditions...).Error)
 	resultValues := reflect.Indirect(reflect.ValueOf(results))
 
 	for i := 0; i < resultValues.Len(); i++ {
@@ -141,7 +166,22 @@ func (scope *Scope) handleHasManyPreload(field *Field, conditions []interface{})
 	}
 
 	results := makeSlice(field.Struct.Type)
-	scope.Err(scope.NewDB().Where(fmt.Sprintf("%v IN (%v)", toQueryCondition(scope, relation.ForeignDBNames), toQueryMarks(primaryKeys)), toQueryValues(primaryKeys)...).Find(results, conditions...).Error)
+
+	newDb := scope.NewDB()
+
+	whereConditions := []interface{}{}
+	for _, c := range conditions {
+		switch cond := c.(type) {
+		default:
+			whereConditions = append(whereConditions, c) // Inline string, default
+		case WhereCondition:
+			newDb = newDb.Where(fmt.Sprintf("%s = ?", cond.Condition), cond.Value)
+		case OrderCondition:
+			newDb = newDb.Order(fmt.Sprintf("%s %s", cond.Column, cond.Order))
+		}
+	}
+
+	scope.Err(newDb.Where(fmt.Sprintf("%v IN (%v)", toQueryCondition(scope, relation.ForeignDBNames), toQueryMarks(primaryKeys)), toQueryValues(primaryKeys)...).Find(results, whereConditions...).Error)
 	resultValues := reflect.Indirect(reflect.ValueOf(results))
 
 	if scope.IndirectValue().Kind() == reflect.Slice {
@@ -171,7 +211,22 @@ func (scope *Scope) handleBelongsToPreload(field *Field, conditions []interface{
 	}
 
 	results := makeSlice(field.Struct.Type)
-	scope.Err(scope.NewDB().Where(fmt.Sprintf("%v IN (%v)", toQueryCondition(scope, relation.AssociationForeignDBNames), toQueryMarks(primaryKeys)), toQueryValues(primaryKeys)...).Find(results, conditions...).Error)
+
+	newDb := scope.NewDB()
+
+	whereConditions := []interface{}{}
+	for _, c := range conditions {
+		switch cond := c.(type) {
+		default:
+			whereConditions = append(whereConditions, c) // Inline string, default
+		case WhereCondition:
+			newDb = newDb.Where(fmt.Sprintf("%s = ?", cond.Condition), cond.Value)
+		case OrderCondition:
+			newDb = newDb.Order(fmt.Sprintf("%s %s", cond.Column, cond.Order))
+		}
+	}
+
+	scope.Err(newDb.Where(fmt.Sprintf("%v IN (%v)", toQueryCondition(scope, relation.AssociationForeignDBNames), toQueryMarks(primaryKeys)), toQueryValues(primaryKeys)...).Find(results, whereConditions...).Error)
 	resultValues := reflect.Indirect(reflect.ValueOf(results))
 
 	for i := 0; i < resultValues.Len(); i++ {
@@ -212,7 +267,22 @@ func (scope *Scope) handleHasManyToManyPreload(field *Field, conditions []interf
 	db := scope.NewDB().Table(scope.New(reflect.New(destType).Interface()).TableName()).Select("*")
 	preloadJoinDB := joinTableHandler.JoinWith(joinTableHandler, db, scope.Value)
 	if len(conditions) > 0 {
-		preloadJoinDB = preloadJoinDB.Where(conditions[0], conditions[1:]...)
+		whereConditions := []interface{}{}
+
+		for _, c := range conditions {
+			switch cond := c.(type) {
+			default:
+				whereConditions = append(whereConditions, c) // Inline string, default
+			case WhereCondition:
+				preloadJoinDB = preloadJoinDB.Where(fmt.Sprintf("%s = ?", cond.Condition), cond.Value)
+			case OrderCondition:
+				preloadJoinDB = preloadJoinDB.Order(fmt.Sprintf("%s %s", cond.Column, cond.Order))
+			}
+		}
+
+		if len(whereConditions) > 0 {
+			preloadJoinDB = preloadJoinDB.Where(whereConditions[0], whereConditions[1:]...)
+		}
 	}
 	rows, err := preloadJoinDB.Rows()
 
