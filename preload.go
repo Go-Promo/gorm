@@ -330,10 +330,12 @@ func (scope *Scope) handleManyToManyPreload(field *Field, conditions []interface
 		for index, column := range columns {
 			value := values[index]
 			if field, ok := fields[column]; ok && !scannedFields[column] {
-				if field.Field.Kind() == reflect.Ptr {
-					field.Field.Set(reflect.ValueOf(value).Elem())
-				} else if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
-					field.Field.Set(v)
+				if isBlank(field.Field) {
+					if field.Field.Kind() == reflect.Ptr {
+						field.Field.Set(reflect.ValueOf(value).Elem())
+					} else if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
+						field.Field.Set(v)
+					}
 				}
 				scannedFields[column] = true
 			} else if strInSlice(column, sourceKeys) {
