@@ -134,7 +134,7 @@ func (scope *Scope) handleHasOnePreload(field *Field, conditions []interface{}) 
 		default:
 			whereConditions = append(whereConditions, c) // Inline string, default
 		case WhereCondition:
-			newDb = newDb.Where(fmt.Sprintf("%s = ?", cond.Condition), cond.Value)
+			newDb = newDb.Where(cond.Condition, cond.Value)
 		case OrderCondition:
 			newDb = newDb.Order(fmt.Sprintf("%s %s", cond.Column, cond.Order))
 		}
@@ -180,7 +180,7 @@ func (scope *Scope) handleHasManyPreload(field *Field, conditions []interface{})
 		default:
 			whereConditions = append(whereConditions, c) // Inline string, default
 		case WhereCondition:
-			newDb = newDb.Where(fmt.Sprintf("%s = ?", cond.Condition), cond.Value)
+			newDb = newDb.Where(cond.Condition, cond.Value)
 		case OrderCondition:
 			newDb = newDb.Order(fmt.Sprintf("%s %s", cond.Column, cond.Order))
 		}
@@ -225,7 +225,7 @@ func (scope *Scope) handleBelongsToPreload(field *Field, conditions []interface{
 		default:
 			whereConditions = append(whereConditions, c) // Inline string, default
 		case WhereCondition:
-			newDb = newDb.Where(fmt.Sprintf("%s = ?", cond.Condition), cond.Value)
+			newDb = newDb.Where(cond.Condition, cond.Value)
 		case OrderCondition:
 			newDb = newDb.Order(fmt.Sprintf("%s %s", cond.Column, cond.Order))
 		}
@@ -283,7 +283,7 @@ func (scope *Scope) handleManyToManyPreload(field *Field, conditions []interface
 			default:
 				whereConditions = append(whereConditions, c) // Inline string, default
 			case WhereCondition:
-				preloadJoinDB = preloadJoinDB.Where(fmt.Sprintf("%s = ?", cond.Condition), cond.Value)
+				preloadJoinDB = preloadJoinDB.Where(cond.Condition, cond.Value)
 			case OrderCondition:
 				preloadJoinDB = preloadJoinDB.Order(fmt.Sprintf("%s %s", cond.Column, cond.Order))
 			}
